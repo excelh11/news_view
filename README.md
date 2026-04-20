@@ -21,67 +21,48 @@ React(Vite) 프론트에 파이썬(FastAPI) 백엔드를 붙여,
 사용자가 입력한 **한글을 무료 로컬 LLM(Ollama)로 영어로 번역**한 뒤
 **GDELT(무료, API Key 불필요)**에서 관련 뉴스 기사를 검색해 보여줍니다. (GDELT 실패 시 **Google News RSS**로 대체)
 
-### 챗봇 흐름 (클래스 다이어그램)
+### 챗봇 흐름도
 
-아래는 **어느 React 컴포넌트에서 입력**이 들어가고, **어느 파이썬 파일**이 요청을 받아 **Ollama·외부 뉴스 소스**와 연결되는지 보여주는 클래스 다이어그램입니다.
+아래 **Mermaid 흐름도**는 챗봇이 거치는 경로를 한눈에 보여 줍니다. (GitHub·VS Code 미리보기 등 Mermaid 지원 환경에서 렌더링됩니다.)
 
 ```mermaid
-classDiagram
-  direction LR
+flowchart TB
+  subgraph react["① React"]
+    NP["NewsPage<br/><small>src/pages/NewsPage.jsx</small>"]
+    CBS["ChatbotNewsSearch<br/><small>src/components/ChatbotNewsSearch.jsx</small>"]
+    NP -->|포함| CBS
+  end
 
-  class NewsPage {
-    <<React>>
-    src/pages/NewsPage.jsx
-  }
+  subgraph chain["② 요청 경로"]
+    VC["vite.config.js<br/>프록시 (/api)"]
+    MP["backend/main.py<br/><small>FastAPI</small>"]
+    CBS --> VC --> MP
+  end
 
-  class ChatbotNewsSearch {
-    <<React>>
-    src/components/ChatbotNewsSearch.jsx
-    +사용자 입력
-    +fetch POST /api/chat-search
-  }
+  subgraph ext["③ main.py 이후"]
+    OLL["Ollama<br/><small>한글 → 영어 번역</small>"]
+    GD["GDELT<br/><small>1차 뉴스 검색</small>"]
+    RSS["Google News RSS<br/><small>폴백</small>"]
+    MP --> OLL
+    MP --> GD
+    MP --> RSS
+  end
 
-  class ViteConfig {
-    <<Vite>>
-    vite.config.js
-    +server.proxy /api
-  }
+  classDef react fill:#e8f4fc,stroke:#228be6,stroke-width:2px,color:#1864ab
+  classDef chain fill:#f3f0ff,stroke:#7950f2,stroke-width:2px,color:#3b2a7a
+  classDef ext fill:#ebfbee,stroke:#2f9e44,stroke-width:2px,color:#1b5e20
 
-  class FastAPIApp {
-    <<Python>>
-    backend/main.py
-    +app FastAPI
-    +POST /api/chat-search
-    +translate_ko_to_en()
-    +search_gdelt()
-    +search_google_news_rss()
-  }
-
-  class Ollama {
-    <<로컬 LLM>>
-    HTTP 127.0.0.1:11434
-    +POST /api/generate
-  }
-
-  class GdeltApi {
-    <<외부 API>>
-    api.gdeltproject.org
-  }
-
-  class GoogleNewsRss {
-    <<외부 RSS>>
-    news.google.com/rss
-  }
-
-  NewsPage *-- ChatbotNewsSearch : 포함
-  ChatbotNewsSearch --> ViteConfig : 브라우저 요청 /api/*
-  ViteConfig --> FastAPIApp : 프록시 127.0.0.1:8000
-  FastAPIApp --> Ollama : 한글 → 영어 번역
-  FastAPIApp --> GdeltApi : 뉴스 검색(1차)
-  FastAPIApp --> GoogleNewsRss : 뉴스 검색(폴백)
+  class NP,CBS react
+  class VC,MP chain
+  class OLL,GD,RSS ext
 ```
 
-**요약:** 사용자는 `ChatbotNewsSearch`에 한글을 입력합니다 → Vite가 `/api/chat-search`를 `backend/main.py`(FastAPI)로 넘깁니다 → `main.py`가 Ollama에 번역을 요청한 뒤, GDELT(또는 폴백으로 Google News RSS)로 기사를 찾아 JSON으로 돌려줍니다.
+**텍스트로 정리하면 다음과 같습니다.**
+
+1. `NewsPage` (`src/pages/NewsPage.jsx`)가 `ChatbotNewsSearch` (`src/components/ChatbotNewsSearch.jsx`)를 **포함**
+2. `ChatbotNewsSearch` → `vite.config.js` **프록시 (`/api`)** → `backend/main.py` (**FastAPI**)
+3. `main.py` → **Ollama** (한글→영어 번역)
+4. `main.py` → **GDELT** (1차 뉴스 검색) / **Google News RSS** (폴백)
 
 ### 실행 방법
 
