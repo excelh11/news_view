@@ -72,15 +72,6 @@ flowchart TB
 yarn dev
 ```
 
-백엔드(FastAPI):
-
-```bash
-cd backend
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn main:app --reload --host 127.0.0.1 --port 8000
-```
 
 Ollama(무료 로컬 LLM) 준비:
 
@@ -96,6 +87,16 @@ ollama serve
 - `OLLAMA_URL` (기본: `http://127.0.0.1:11434`)
 
 프론트는 `vite.config.js` 프록시 설정으로 `/api/*` 요청을 `http://127.0.0.1:8000`으로 전달합니다.
+
+백엔드(FastAPI):
+
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
 
 ### API
 
